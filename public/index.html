@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S. — Chief of Staff</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --c:#00d4ff;--cd:rgba(0,212,255,0.1);--cb:rgba(0,212,255,0.35);
+  --o:#ff6b35;--g:#00ff88;--warn:#ffcc00;--danger:#ff4444;
+  --bg:#020c14;--t:#c8f0ff;--td:rgba(200,240,255,0.55);--tm:rgba(200,240,255,0.2);
+  --border:rgba(0,212,255,0.15);--border2:rgba(0,212,255,0.32);
+  --mono:'Share Tech Mono',monospace;--dis:'Rajdhani',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--t);font-family:var(--dis);overflow:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.025) 1px,transparent 1px);background-size:40px 40px;z-index:0;animation:gridMove 25s linear infinite;pointer-events:none}
+@keyframes gridMove{to{background-position:40px 40px}}
+#app{position:relative;z-index:1;height:100vh;display:flex;flex-direction:column}
+
+/* TOP BAR */
+#topbar{display:flex;align-items:center;justify-content:space-between;padding:10px 22px;border-bottom:1px solid var(--border);background:rgba(2,12,20,0.95);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-title{font-size:18px;font-weight:700;letter-spacing:5px;color:var(--c)}
+.logo-sub{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--td);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.conn-badge{font-family:var(--mono);font-size:9px;padding:3px 8px;border:1px solid;display:flex;align-items:center;gap:4px}
+.conn-ok{border-color:rgba(0,255,136,0.3);color:var(--g);background:rgba(0,255,136,0.05)}
+.conn-demo{border-color:rgba(255,204,0,0.3);color:var(--warn);background:rgba(255,204,0,0.05)}
+.conn-err{border-color:rgba(255,68,68,0.3);color:var(--danger);background:rgba(255,68,68,0.05)}
+#clock{font-family:var(--mono);font-size:11px;color:var(--c);opacity:0.65;letter-spacing:1px}
+
+/* VOICE ORB in topbar */
+#voice-orb-mini{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(0,212,255,0.4);background:rgba(0,212,255,0.07);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.2s,border-color 0.2s;position:relative}
+#voice-orb-mini:hover{background:rgba(0,212,255,0.18)}
+#voice-orb-mini.listening{border-color:var(--c);background:rgba(0,212,255,0.22);animation:orbPulse 0.8s ease-in-out infinite alternate}
+#voice-orb-mini.speaking{border-color:var(--g);background:rgba(0,255,136,0.12)}
+@keyframes orbPulse{from{background:rgba(0,212,255,0.15)}to{background:rgba(0,212,255,0.32)}}
+.orb-dot{width:8px;height:8px;border-radius:50%;background:var(--c)}
+#voice-orb-mini.listening .orb-dot{background:var(--c);animation:dotBlink 0.5s ease-in-out infinite alternate}
+#voice-orb-mini.speaking .orb-dot{background:var(--g)}
+@keyframes dotBlink{from{opacity:0.4}to{opacity:1}}
+
+/* TABS */
+#tabs{display:flex;align-items:center;border-bottom:1px solid var(--border);background:rgba(2,12,20,0.8);flex-shrink:0;padding:0 22px}
+.tab{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;padding:11px 16px;cursor:pointer;color:var(--td);border-bottom:2px solid transparent;transition:color 0.2s,border-color 0.2s;display:flex;align-items:center;gap:6px;text-transform:uppercase}
+.tab:hover{color:var(--t)}
+.tab.active{color:var(--c);border-bottom-color:var(--c)}
+.tab-count{background:var(--c);color:var(--bg);border-radius:10px;font-size:9px;padding:1px 6px;font-weight:700;min-width:18px;text-align:center}
+.tab-count.warn{background:var(--o)}
+#run-btn{margin-left:auto;background:rgba(0,212,255,0.08);border:1px solid var(--border2);color:var(--c);padding:6px 14px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;cursor:pointer;transition:background 0.2s;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,0 100%);text-transform:uppercase}
+#run-btn:hover{background:rgba(0,212,255,0.18)}
+#run-btn:disabled{opacity:0.3;cursor:not-allowed}
+
+/* PANELS */
+#content{flex:1;overflow:hidden;min-height:0}
+.panel{height:100%;overflow-y:auto;padding:18px 22px;display:none;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.2) transparent}
+.panel.active{display:block}
+.panel::-webkit-scrollbar{width:3px}
+.panel::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.2);border-radius:2px}
+
+/* STATS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.stat-card{background:rgba(0,212,255,0.04);border:1px solid var(--border);padding:11px 13px;position:relative;clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%)}
+.stat-card::after{content:'';position:absolute;top:0;right:8px;width:8px;height:1px;background:var(--c);transform:rotate(45deg);transform-origin:right}
+.stat-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--td);margin-bottom:4px;text-transform:uppercase}
+.stat-val{font-size:24px;font-weight:700;color:var(--c)}
+
+/* SECTION HEADER */
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.sec-title{font-size:12px;font-weight:600;letter-spacing:2px;color:var(--t);text-transform:uppercase}
+.sec-line{flex:1;height:1px;background:var(--border)}
+
+/* EMAIL CARDS */
+.email-card{background:rgba(0,212,255,0.04);border:1px solid var(--border);margin-bottom:9px;transition:border-color 0.2s}
+.email-card:hover{border-color:var(--border2)}
+.email-card.rfp{border-left:3px solid var(--c)}
+.email-card.rfi{border-left:3px solid #a78bfa}
+.email-card.meeting_request{border-left:3px solid var(--g)}
+.email-card.action_item{border-left:3px solid var(--o)}
+.email-card.fyi{border-left:3px solid rgba(200,240,255,0.15)}
+.email-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:11px 13px 8px;gap:10px;cursor:pointer}
+.email-from{font-size:13px;font-weight:600;color:var(--t)}
+.email-subject{font-size:12px;color:var(--td);margin-top:1px}
+.email-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.cat-badge{font-family:var(--mono);font-size:8px;letter-spacing:1px;padding:2px 7px;border:1px solid;text-transform:uppercase;white-space:nowrap}
+.cat-rfp{color:var(--c);border-color:rgba(0,212,255,0.4);background:rgba(0,212,255,0.07)}
+.cat-rfi{color:#a78bfa;border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.07)}
+.cat-meeting_request{color:var(--g);border-color:rgba(0,255,136,0.35);background:rgba(0,255,136,0.05)}
+.cat-action_item{color:var(--o);border-color:rgba(255,107,53,0.4);background:rgba(255,107,53,0.07)}
+.cat-fyi{color:var(--td);border-color:rgba(200,240,255,0.15);background:transparent}
+.pri-dot{width:6px;height:6px;border-radius:50%}
+.p-high{background:var(--danger)}.p-medium{background:var(--warn)}.p-low{background:rgba(200,240,255,0.3)}
+.email-time{font-family:var(--mono);font-size:9px;color:var(--tm)}
+.email-body{display:none;padding:0 13px 11px;border-top:1px solid var(--border)}
+.email-body.open{display:block}
+.email-summary{font-family:var(--mono);font-size:10px;color:var(--td);line-height:1.6;background:rgba(0,212,255,0.03);padding:7px 9px;margin-bottom:9px;border-left:2px solid var(--border2)}
+.draft-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--c);opacity:0.65;margin-bottom:4px;text-transform:uppercase}
+.draft-txt{font-size:13px;color:var(--td);line-height:1.65;background:rgba(0,0,0,0.2);padding:9px 11px;border:1px solid var(--border);white-space:pre-wrap;margin-bottom:9px}
+.draft-actions{display:flex;gap:7px;align-items:center}
+.btn-ok{background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.32);color:var(--g);padding:7px 14px;font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;transition:background 0.2s;clip-path:polygon(0 0,calc(100% - 6px) 0,100% 6px,100% 100%,0 100%)}
+.btn-ok:hover{background:rgba(0,255,136,0.18)}
+.btn-rw{background:rgba(255,107,53,0.07);border:1px solid rgba(255,107,53,0.3);color:var(--o);padding:7px 14px;font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;transition:background 0.2s}
+.btn-rw:hover{background:rgba(255,107,53,0.16)}
+.fb-input{flex:1;background:rgba(0,0,0,0.3);border:1px solid var(--border);color:var(--t);padding:6px 10px;font-family:var(--dis);font-size:12px;outline:none}
+.fb-input:focus{border-color:var(--border2)}
+.fb-input::placeholder{color:var(--tm);font-family:var(--mono);font-size:10px}
+.rfp-alert{background:rgba(0,212,255,0.05);border:1px solid rgba(0,212,255,0.22);padding:6px 9px;margin-bottom:7px;font-family:var(--mono);font-size:9px;color:var(--c);display:flex;align-items:center;gap:6px}
+
+/* MEETING CARDS */
+.mtg-card{background:rgba(0,212,255,0.04);border:1px solid var(--border);margin-bottom:10px}
+.mtg-hdr{padding:12px 13px;display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer}
+.mtg-title{font-size:14px;font-weight:600;color:var(--t)}
+.mtg-meta{font-family:var(--mono);font-size:9px;color:var(--td);margin-top:2px}
+.mtg-body{display:none;padding:0 13px 13px;border-top:1px solid var(--border)}
+.mtg-body.open{display:block}
+.m-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--c);opacity:0.65;margin:10px 0 5px;text-transform:uppercase}
+.m-summary{font-size:13px;color:var(--td);line-height:1.6}
+.action-row{display:flex;align-items:flex-start;gap:9px;padding:5px 0;border-bottom:1px solid rgba(0,212,255,0.05)}
+.action-row:last-child{border-bottom:none}
+.action-owner{color:var(--c);font-family:var(--mono);font-size:10px;min-width:90px}
+.action-task{color:var(--td);font-size:12px;flex:1}
+.action-due{color:var(--warn);font-family:var(--mono);font-size:9px;white-space:nowrap}
+
+/* VOICE PANEL */
+.voice-panel-wrap{display:flex;flex-direction:column;align-items:center;gap:18px;padding:30px 20px}
+.v-orb-lg{width:100px;height:100px;border-radius:50%;border:2px solid rgba(0,212,255,0.35);background:rgba(0,212,255,0.07);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s;position:relative}
+.v-orb-lg::before,.v-orb-lg::after{content:'';position:absolute;border-radius:50%;border:1px solid rgba(0,212,255,0.15);animation:ripple 3s ease-in-out infinite}
+.v-orb-lg::before{width:130px;height:130px;animation-delay:0s}
+.v-orb-lg::after{width:160px;height:160px;animation-delay:0.5s}
+@keyframes ripple{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:0.7;transform:scale(1.03)}}
+.v-orb-lg.listening{border-color:var(--c);background:rgba(0,212,255,0.2);animation:orbListen 0.8s ease-in-out infinite alternate}
+.v-orb-lg.speaking{border-color:var(--g);background:rgba(0,255,136,0.1)}
+.v-orb-lg.thinking{border-color:var(--o);animation:orbSpin 1.2s linear infinite}
+@keyframes orbListen{from{background:rgba(0,212,255,0.15)}to{background:rgba(0,212,255,0.3)}}
+@keyframes orbSpin{from{box-shadow:0 0 0 0 rgba(255,107,53,0.3)}to{box-shadow:0 0 0 12px rgba(255,107,53,0)}}
+.v-orb-icon{font-family:var(--mono);font-size:11px;color:var(--c);letter-spacing:1px}
+.v-state{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--td);text-align:center}
+.v-transcript{width:100%;max-width:560px;background:rgba(0,212,255,0.04);border:1px solid var(--border);padding:9px 13px;font-family:var(--mono);font-size:10px;color:var(--td);min-height:36px;text-align:center;line-height:1.6}
+.v-response{width:100%;max-width:560px}
+.v-resp-lbl{font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:var(--c);opacity:0.65;margin-bottom:4px;text-transform:uppercase}
+.v-resp-box{background:rgba(0,212,255,0.04);border:1px solid var(--border);padding:11px 13px;font-size:13px;color:var(--t);line-height:1.65;min-height:50px}
+.v-hint{font-family:var(--mono);font-size:9px;color:var(--tm);text-align:center;letter-spacing:1px}
+.v-hint span{color:var(--warn)}
+.v-btns{display:flex;gap:9px;width:100%;max-width:560px}
+.vbtn{flex:1;background:rgba(0,212,255,0.07);border:1px solid var(--border2);color:var(--c);padding:8px 12px;font-family:var(--mono);font-size:10px;letter-spacing:1.5px;cursor:pointer;transition:background 0.2s;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,0 100%);text-transform:uppercase}
+.vbtn:hover{background:rgba(0,212,255,0.18)}
+.vbtn.danger{border-color:rgba(255,68,68,0.35);color:#ff6666;background:rgba(255,68,68,0.05)}
+.vbtn.danger:hover{background:rgba(255,68,68,0.14)}
+.wave-row{display:flex;align-items:center;justify-content:center;gap:3px;height:24px}
+.wbar{width:3px;background:var(--c);border-radius:2px;opacity:0.35}
+.wbar.a{opacity:0.9;animation:waveA 0.6s ease-in-out infinite alternate}
+.wbar:nth-child(2){animation-delay:0.1s}.wbar:nth-child(3){animation-delay:0.2s}
+.wbar:nth-child(4){animation-delay:0.3s}.wbar:nth-child(5){animation-delay:0.15s}
+.wbar:nth-child(6){animation-delay:0.05s}.wbar:nth-child(7){animation-delay:0.25s}
+@keyframes waveA{from{height:5px}to{height:20px}}
+
+/* STATUS PANEL */
+.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.st-block{background:rgba(0,212,255,0.04);border:1px solid var(--border);padding:13px}
+.st-block-title{font-family:var(--mono);font-size:9px;letter-spacing:1.5px;color:var(--c);opacity:0.65;margin-bottom:9px;text-transform:uppercase}
+.st-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,212,255,0.05);font-size:12px;color:var(--td)}
+.st-row:last-child{border-bottom:none}
+.st-ok{color:var(--g);font-family:var(--mono);font-size:10px}
+.st-demo{color:var(--warn);font-family:var(--mono);font-size:10px}
+.st-err{color:var(--danger);font-family:var(--mono);font-size:10px}
+.inst-block{background:rgba(0,212,255,0.04);border:1px solid var(--border);padding:13px;margin-bottom:9px}
+.inst-title{font-size:13px;font-weight:600;color:var(--t);margin-bottom:7px}
+.inst-step{font-family:var(--mono);font-size:10px;color:var(--td);padding:3px 0;border-bottom:1px solid rgba(0,212,255,0.05);line-height:1.6}
+.inst-step:last-child{border-bottom:none}
+.code{color:var(--c);background:rgba(0,212,255,0.08);padding:1px 5px}
+
+/* EMPTY STATE */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;gap:10px}
+.empty p{font-family:var(--mono);font-size:10px;color:var(--tm)}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;right:20px;z-index:100;display:flex;flex-direction:column;gap:7px}
+.toast-msg{background:rgba(4,22,34,0.97);border:1px solid var(--border2);padding:9px 14px;font-family:var(--mono);font-size:10px;animation:toastIn 0.25s ease;display:flex;align-items:center;gap:7px}
+@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.t-ok{color:var(--g);border-color:rgba(0,255,136,0.28)}
+.t-info{color:var(--c)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar">
+    <div class="logo">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none">
+        <g style="transform-origin:15px 15px;animation:spin1 3s linear infinite">
+          <circle cx="15" cy="15" r="11" stroke="#00d4ff" stroke-width="0.7" stroke-dasharray="4 3" opacity="0.5"/>
+        </g>
+        <circle cx="15" cy="15" r="5.5" fill="rgba(0,212,255,0.1)" stroke="rgba(0,212,255,0.5)" stroke-width="0.8"/>
+        <circle cx="15" cy="15" r="2.5" fill="#00d4ff" opacity="0.9"/>
+        <style>@keyframes spin1{to{transform:rotate(360deg)}}</style>
+      </svg>
+      <div>
+        <div class="logo-title">J.A.R.V.I.S.</div>
+        <div class="logo-sub">CHIEF OF STAFF — VERCEL EDITION</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div id="badge-m365" class="conn-badge conn-demo">M365 <span>DEMO</span></div>
+      <div id="badge-fathom" class="conn-badge conn-demo">FATHOM <span>DEMO</span></div>
+      <div id="badge-claude" class="conn-badge conn-err">CLAUDE <span>—</span></div>
+      <div id="voice-orb-mini" onclick="toggleVoice()" title="Click to activate voice">
+        <div class="orb-dot"></div>
+      </div>
+      <div id="clock"></div>
+    </div>
+  </div>
+
+  <div id="tabs">
+    <div class="tab active" onclick="switchTab('email')" id="tab-email">EMAIL TRIAGE <span class="tab-count warn" id="cnt-email">0</span></div>
+    <div class="tab" onclick="switchTab('meetings')" id="tab-meetings">MEETINGS <span class="tab-count" id="cnt-meetings">0</span></div>
+    <div class="tab" onclick="switchTab('rfp')" id="tab-rfp">RFP / RFI <span class="tab-count" id="cnt-rfp">0</span></div>
+    <div class="tab" onclick="switchTab('voice')" id="tab-voice">VOICE</div>
+    <div class="tab" onclick="switchTab('status')" id="tab-status">SYSTEM</div>
+    <button id="run-btn" onclick="runTriage()">▶ RUN TRIAGE</button>
+  </div>
+
+  <div id="content">
+    <!-- EMAIL -->
+    <div class="panel active" id="panel-email">
+      <div class="stat-row">
+        <div class="stat-card"><div class="stat-lbl">PENDING</div><div class="stat-val" id="s-pending">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">APPROVED</div><div class="stat-val" id="s-approved">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">RFP / RFI</div><div class="stat-val" id="s-rfp">0</div></div>
+        <div class="stat-card"><div class="stat-lbl">TOTAL</div><div class="stat-val" id="s-total">0</div></div>
+      </div>
+      <div class="sec-hdr"><div class="sec-title">Inbox — awaiting approval</div><div class="sec-line"></div></div>
+      <div id="email-list"><div class="empty"><p>Click RUN TRIAGE to fetch and classify your inbox.</p></div></div>
+    </div>
+
+    <!-- MEETINGS -->
+    <div class="panel" id="panel-meetings">
+      <div class="sec-hdr"><div class="sec-title">Meeting intelligence</div><div class="sec-line"></div><button class="btn-ok" style="font-size:9px;padding:5px 10px" onclick="runMeetings()">▶ FETCH</button></div>
+      <div id="meeting-list"><div class="empty"><p>Click FETCH to load transcripts and generate notes.</p></div></div>
+    </div>
+
+    <!-- RFP -->
+    <div class="panel" id="panel-rfp">
+      <div class="sec-hdr"><div class="sec-title">RFP / RFI engine</div><div class="sec-line"></div></div>
+      <div id="rfp-list"><div class="empty"><p>RFP/RFI emails detected here. Run triage to populate.</p></div></div>
+    </div>
+
+    <!-- VOICE -->
+    <div class="panel" id="panel-voice">
+      <div class="voice-panel-wrap">
+        <div class="v-orb-lg" id="v-orb-lg" onclick="toggleVoice()">
+          <span class="v-orb-icon" id="v-orb-icon">MIC</span>
+        </div>
+        <div class="wave-row" id="v-wave">
+          <div class="wbar" style="height:5px"></div><div class="wbar" style="height:9px"></div>
+          <div class="wbar" style="height:5px"></div><div class="wbar" style="height:13px"></div>
+          <div class="wbar" style="height:7px"></div><div class="wbar" style="height:11px"></div>
+          <div class="wbar" style="height:5px"></div>
+        </div>
+        <div class="v-state" id="v-state">CLICK ORB OR PRESS SPACE TO ACTIVATE</div>
+        <div class="v-transcript" id="v-transcript">Waiting for voice input...</div>
+        <div class="v-response">
+          <div class="v-resp-lbl">J.A.R.V.I.S. RESPONSE</div>
+          <div class="v-resp-box" id="v-resp">Good day. All systems nominal. Click the orb or press Space to speak.</div>
+        </div>
+        <div class="v-hint">Say <span>"Hey JARVIS"</span> then your command. Hold <span>Space</span> to push-to-talk.</div>
+        <div class="v-btns">
+          <button class="vbtn" id="v-listen-btn" onclick="toggleVoice()">START LISTENING</button>
+          <button class="vbtn" id="v-stop-btn" onclick="stopVoice()" disabled>STOP</button>
+          <button class="vbtn danger" id="v-mute-btn" onclick="toggleMute()">MUTE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="panel" id="panel-status">
+      <div class="st-grid">
+        <div class="st-block">
+          <div class="st-block-title">CONNECTORS</div>
+          <div class="st-row">Microsoft 365 <span id="st-m365" class="st-demo">DEMO</span></div>
+          <div class="st-row">Fathom <span id="st-fathom" class="st-demo">DEMO</span></div>
+          <div class="st-row">Anthropic Claude <span id="st-claude" class="st-err">MISSING</span></div>
+        </div>
+        <div class="st-block">
+          <div class="st-block-title">AGENTS</div>
+          <div class="st-row">Email triage <span class="st-ok">READY</span></div>
+          <div class="st-row">Meeting intelligence <span class="st-ok">READY</span></div>
+          <div class="st-row">RFP/RFI engine <span class="st-demo">SOON</span></div>
+          <div class="st-row">Teams meeting bot <span class="st-demo">SOON</span></div>
+        </div>
+      </div>
+      <div class="inst-block">
+        <div class="inst-title">How to deploy on Vercel</div>
+        <div class="inst-step">1. Push this project to a GitHub repo (github.com → New repository → upload files)</div>
+        <div class="inst-step">2. Go to <span class="code">vercel.com</span> → New Project → Import your GitHub repo</div>
+        <div class="inst-step">3. In Vercel project settings → Environment Variables → add your keys</div>
+        <div class="inst-step">4. Click Deploy — Vercel builds and gives you a live URL in ~60 seconds</div>
+      </div>
+      <div class="inst-block">
+        <div class="inst-title">Environment variables to add in Vercel</div>
+        <div class="inst-step"><span class="code">ANTHROPIC_API_KEY</span> — from console.anthropic.com (required)</div>
+        <div class="inst-step"><span class="code">YOUR_NAME</span> — your name for email sign-offs</div>
+        <div class="inst-step"><span class="code">YOUR_ROLE</span> — your job title / role</div>
+        <div class="inst-step"><span class="code">MS_CLIENT_ID / MS_CLIENT_SECRET / MS_TENANT_ID / MS_USER_EMAIL</span> — add when ready</div>
+        <div class="inst-step"><span class="code">FATHOM_API_KEY</span> — add when ready</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ── STATE ── */
+let emailItems = [], approvedCount = 0, meetingItems = [];
+let vRecognition = null, vListening = false, vMuted = false, vBusy = false, vHistory = [];
+const synth = window.speechSynthesis;
+const WAKE = ['hey jarvis','jarvis','hey jarves'];
+
+/* ── TABS ── */
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+}
+
+/* ── CLOCK ── */
+setInterval(()=>{ document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-US',{hour12:false}); },1000);
+
+/* ── TOAST ── */
+function toast(msg,type='info'){
+  const t=document.getElementById('toast');
+  const el=document.createElement('div');
+  el.className='toast-msg t-'+type;
+  el.textContent=msg;
+  t.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+/* ── TIME ── */
+function ago(iso){
+  const d=(Date.now()-new Date(iso))/1000;
+  if(d<60)return Math.floor(d)+'s ago';
+  if(d<3600)return Math.floor(d/60)+'m ago';
+  return Math.floor(d/3600)+'h ago';
+}
+
+/* ── EMAIL ── */
+function renderEmails(items){
+  const list=document.getElementById('email-list');
+  if(!items.length){list.innerHTML='<div class="empty"><p>No emails in queue.</p></div>';return;}
+  list.innerHTML=items.map(item=>{
+    const cat=item.classification.category;
+    return `<div class="email-card ${cat}">
+  <div class="email-hdr" onclick="toggleBody('${item.id}')">
+    <div style="flex:1;min-width:0">
+      <div class="email-from">${item.email.fromName} <span style="color:var(--td);font-weight:400;font-size:11px">&lt;${item.email.from}&gt;</span></div>
+      <div class="email-subject">${item.email.subject}</div>
+      <div style="margin-top:4px;font-family:var(--mono);font-size:9px;color:var(--tm)">${item.classification.summary}</div>
+    </div>
+    <div class="email-meta">
+      <span class="cat-badge cat-${cat}">${cat.replace('_',' ')}</span>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div class="pri-dot p-${item.classification.priority}"></div>
+        <span class="email-time">${ago(item.email.receivedAt)}</span>
+      </div>
+    </div>
+  </div>
+  <div class="email-body" id="body-${item.id}">
+    ${item.isRfpRfi?`<div class="rfp-alert">⚡ ${cat.toUpperCase()} — will trigger RFP engine after approval</div>`:''}
+    <div class="email-summary">${item.classification.sender_intent}${item.classification.urgency_signal?' · Deadline: '+item.classification.urgency_signal:''}</div>
+    ${item.draft?`<div class="draft-lbl">SUGGESTED REPLY</div>
+    <div class="draft-txt" id="draft-${item.id}">${item.draft}</div>
+    <div class="draft-actions">
+      <button class="btn-ok" onclick="approve('${item.id}')">✓ APPROVE & SEND</button>
+      <input class="fb-input" id="fb-${item.id}" placeholder="Feedback for rewrite...">
+      <button class="btn-rw" onclick="rewrite('${item.id}')">↺ REWRITE</button>
+    </div>`:'<div style="font-family:var(--mono);font-size:10px;color:var(--td);padding:7px 0">No reply needed.</div>'}
+  </div>
+</div>`}).join('');
+}
+
+function toggleBody(id){document.getElementById('body-'+id).classList.toggle('open');}
+
+async function approve(id){
+  const item=emailItems.find(i=>i.id===id);
+  if(!item)return;
+  await fetch('/api/triage/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'approve',emailId:item.emailId,draft:item.draft})});
+  emailItems=emailItems.filter(i=>i.id!==id);
+  approvedCount++;
+  renderEmails(emailItems);
+  updateStats();
+  toast('✓ Reply approved and sent','ok');
+}
+
+async function rewrite(id){
+  const item=emailItems.find(i=>i.id===id);
+  if(!item)return;
+  const fb=document.getElementById('fb-'+id).value;
+  if(!fb){toast('Add feedback first','info');return;}
+  toast('Rewriting...','info');
+  const res=await fetch('/api/triage/action',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'rewrite',draft:item.draft,feedback:fb})});
+  const d=await res.json();
+  if(d.success){item.draft=d.draft;const el=document.getElementById('draft-'+id);if(el)el.textContent=d.draft;toast('↺ Draft rewritten','ok');}
+}
+
+function updateStats(){
+  const rfp=emailItems.filter(i=>i.isRfpRfi).length;
+  document.getElementById('s-pending').textContent=emailItems.length;
+  document.getElementById('s-approved').textContent=approvedCount;
+  document.getElementById('s-rfp').textContent=rfp;
+  document.getElementById('s-total').textContent=emailItems.length+approvedCount;
+  document.getElementById('cnt-email').textContent=emailItems.length;
+  document.getElementById('cnt-rfp').textContent=rfp;
+  renderRfp(emailItems.filter(i=>i.isRfpRfi));
+}
+
+function renderRfp(items){
+  const list=document.getElementById('rfp-list');
+  if(!items.length){list.innerHTML='<div class="empty"><p>No RFP/RFI detected. Run triage to populate.</p></div>';return;}
+  list.innerHTML=items.map(item=>`<div class="email-card ${item.classification.category}" style="margin-bottom:9px">
+  <div class="email-hdr">
+    <div style="flex:1"><div class="email-from">${item.email.fromName}</div>
+    <div class="email-subject">${item.email.subject}</div>
+    <div style="margin-top:4px;font-family:var(--mono);font-size:9px;color:var(--td)">${item.classification.summary}</div>
+    ${item.classification.urgency_signal?`<div style="margin-top:3px;font-family:var(--mono);font-size:9px;color:var(--warn)">Deadline: ${item.classification.urgency_signal}</div>`:''}
+    </div>
+    <div class="email-meta">
+      <span class="cat-badge cat-${item.classification.category}">${item.classification.category.toUpperCase()}</span>
+      <button class="btn-ok" style="font-size:9px;padding:4px 9px;margin-top:6px" onclick="toast('RFP engine coming soon — will build questionnaire + deck','info')">BUILD RESPONSE</button>
+    </div>
+  </div>
+</div>`).join('');
+}
+
+async function runTriage(){
+  const btn=document.getElementById('run-btn');
+  btn.disabled=true;btn.textContent='⟳ RUNNING...';
+  toast('Fetching and classifying emails...','info');
+  try{
+    const res=await fetch('/api/triage/run',{method:'POST'});
+    const d=await res.json();
+    if(d.success){emailItems=d.items;renderEmails(emailItems);updateStats();toast(`✓ ${d.processed} emails processed`,'ok');}
+    else toast('Error: '+d.error,'info');
+  }catch(e){toast('Cannot reach server. Is it deployed?','info');}
+  btn.disabled=false;btn.textContent='▶ RUN TRIAGE';
+}
+
+/* ── MEETINGS ── */
+async function runMeetings(){
+  toast('Fetching meeting transcripts...','info');
+  try{
+    const res=await fetch('/api/meetings/run',{method:'POST'});
+    const d=await res.json();
+    if(d.success){meetingItems=d.items;renderMeetings(meetingItems);document.getElementById('cnt-meetings').textContent=meetingItems.length;toast(`✓ ${d.processed} meetings processed`,'ok');}
+    else toast('Error: '+d.error,'info');
+  }catch(e){toast('Cannot reach server','info');}
+}
+
+function renderMeetings(items){
+  const list=document.getElementById('meeting-list');
+  if(!items.length){list.innerHTML='<div class="empty"><p>No meetings found.</p></div>';return;}
+  list.innerHTML=items.map((item,idx)=>{
+    const n=item.notes;const actions=n.action_items||[];
+    return `<div class="mtg-card">
+  <div class="mtg-hdr" onclick="this.nextElementSibling.classList.toggle('open')">
+    <div><div class="mtg-title">${item.meeting.title}</div>
+    <div class="mtg-meta">${new Date(item.meeting.startedAt).toLocaleDateString()} · ${item.meeting.duration}min · ${item.meeting.participants.join(', ')}</div></div>
+    <button class="btn-ok" style="font-size:9px;padding:5px 10px" onclick="event.stopPropagation();toast('Summary approved — would send to attendees','ok')">✓ SEND SUMMARY</button>
+  </div>
+  <div class="mtg-body">
+    <div class="m-lbl">SUMMARY</div><div class="m-summary">${n.executive_summary||''}</div>
+    ${actions.length?`<div class="m-lbl">ACTION ITEMS (${actions.length})</div>${actions.map(a=>`<div class="action-row"><div class="action-owner">${a.owner}</div><div class="action-task">${a.task}</div><div class="action-due">${a.due||''}</div></div>`).join('')}`:''}
+    ${n.follow_up_email_body?`<div class="m-lbl">FOLLOW-UP DRAFT</div><div class="draft-txt">${n.follow_up_email_body}</div>`:''}
+  </div>
+</div>`;}).join('');
+}
+
+/* ── STATUS ── */
+async function loadStatus(){
+  try{
+    const res=await fetch('/api/status');
+    const d=await res.json();
+    const c=d.connectors;
+    const setS=(id,v)=>{const el=document.getElementById(id);if(!el)return;el.textContent=v==='connected'?'LIVE':v==='demo_mode'?'DEMO':'MISSING';el.className=v==='connected'?'st-ok':v==='demo_mode'?'st-demo':'st-err';};
+    setS('st-m365',c.microsoft365);setS('st-fathom',c.fathom);setS('st-claude',c.anthropic);
+    const bc=(v)=>v==='connected'?'conn-ok':v==='demo_mode'?'conn-demo':'conn-err';
+    const bl=(v)=>v==='connected'?'LIVE':v==='demo_mode'?'DEMO':'—';
+    const bm=document.getElementById('badge-m365');bm.className='conn-badge '+bc(c.microsoft365);bm.lastChild.textContent=bl(c.microsoft365);
+    const bf=document.getElementById('badge-fathom');bf.className='conn-badge '+bc(c.fathom);bf.lastChild.textContent=bl(c.fathom);
+    const bcl=document.getElementById('badge-claude');bcl.className='conn-badge '+bc(c.anthropic);bcl.lastChild.textContent=bl(c.anthropic);
+  }catch(e){}
+}
+
+/* ── VOICE ── */
+function vSetState(s){
+  const orb=document.getElementById('v-orb-lg');
+  const mini=document.getElementById('voice-orb-mini');
+  const icon=document.getElementById('v-orb-icon');
+  const state=document.getElementById('v-state');
+  const bars=document.querySelectorAll('.wbar');
+  orb.className='v-orb-lg';mini.className='';
+  bars.forEach(b=>b.classList.remove('a'));
+  if(s==='idle'){state.textContent='CLICK ORB OR PRESS SPACE TO ACTIVATE';icon.textContent='MIC';document.getElementById('v-listen-btn').textContent='START LISTENING';document.getElementById('v-stop-btn').disabled=true;}
+  else if(s==='listening'){state.textContent='LISTENING...';orb.classList.add('listening');mini.classList.add('listening');icon.textContent='●';bars.forEach(b=>b.classList.add('a'));document.getElementById('v-listen-btn').textContent='LISTENING...';document.getElementById('v-stop-btn').disabled=false;}
+  else if(s==='thinking'){state.textContent='PROCESSING...';orb.classList.add('thinking');mini.classList.add('listening');icon.textContent='⟳';}
+  else if(s==='speaking'){state.textContent='JARVIS SPEAKING...';orb.classList.add('speaking');mini.classList.add('speaking');icon.textContent='◈';bars.forEach(b=>b.classList.add('a'));}
+}
+
+function vSpeak(text){
+  if(vMuted||!synth)return;
+  synth.cancel();
+  const u=new SpeechSynthesisUtterance(text);
+  u.rate=0.92;u.pitch=0.85;u.volume=1;
+  const voices=synth.getVoices();
+  const v=voices.find(v=>v.name.includes('Daniel')||v.name.includes('Google UK')||v.name.includes('David'))||voices.find(v=>v.lang==='en-GB')||voices[0];
+  if(v)u.voice=v;
+  u.onstart=()=>vSetState('speaking');
+  u.onend=()=>{if(!vListening)vSetState('idle');else vSetState('listening');};
+  synth.speak(u);
+}
+
+async function vProcess(query){
+  if(vBusy)return;
+  vBusy=true;synth.cancel();vSetState('thinking');
+  document.getElementById('v-transcript').textContent='You: '+query;
+  vHistory.push({role:'user',content:query});
+  if(vHistory.length>10)vHistory=vHistory.slice(-10);
+  try{
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:vHistory})});
+    const d=await res.json();
+    const reply=d.content?.[0]?.text||'I encountered an issue processing that.';
+    vHistory.push({role:'assistant',content:reply});
+    document.getElementById('v-resp').textContent=reply;
+    vSpeak(reply);
+  }catch(e){
+    const err='Communication error — check your connection.';
+    document.getElementById('v-resp').textContent=err;
+    vSpeak(err);
+  }
+  vBusy=false;
+}
+
+function setupRecognition(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR)return null;
+  const r=new SR();
+  r.continuous=true;r.interimResults=true;r.lang='en-US';
+  r.onstart=()=>{vListening=true;vSetState('listening');};
+  r.onend=()=>{vListening=false;if(!vBusy)vSetState('idle');};
+  r.onerror=(e)=>{if(e.error==='no-speech'||e.error==='aborted')return;vListening=false;vSetState('idle');};
+  r.onresult=(ev)=>{
+    let interim='',final='';
+    for(let i=ev.resultIndex;i<ev.results.length;i++){
+      const t=ev.results[i][0].transcript;
+      if(ev.results[i].isFinal)final+=t;else interim+=t;
+    }
+    const disp=(final||interim).trim();
+    if(disp)document.getElementById('v-transcript').textContent=disp;
+    if(final){
+      const lo=final.toLowerCase().trim();
+      const wake=WAKE.some(w=>lo.includes(w));
+      if(wake){
+        const q=WAKE.reduce((s,w)=>s.replace(new RegExp(w,'gi'),''),lo).trim();
+        if(q.length>2)vProcess(q);else vSpeak("Yes, I'm here. How can I help?");
+      } else if(vListening&&lo.length>2){vProcess(lo);}
+    }
+  };
+  return r;
+}
+
+function toggleVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Voice requires Chrome or Edge browser','info');return;}
+  if(!vRecognition)vRecognition=setupRecognition();
+  if(vListening){vRecognition.stop();vSetState('idle');}
+  else{try{vRecognition.start();}catch(e){vRecognition=setupRecognition();vRecognition.start();}}
+}
+
+function stopVoice(){
+  synth.cancel();
+  if(vRecognition)vRecognition.stop();
+  vListening=false;vBusy=false;vSetState('idle');
+}
+
+function toggleMute(){
+  vMuted=!vMuted;
+  const btn=document.getElementById('v-mute-btn');
+  btn.textContent=vMuted?'UNMUTE':'MUTE';
+  btn.style.opacity=vMuted?'0.45':'1';
+  if(vMuted)synth.cancel();
+}
+
+document.addEventListener('keydown',e=>{if(e.code==='Space'&&e.target===document.body){e.preventDefault();if(!vListening)toggleVoice();}});
+
+/* ── INIT ── */
+loadStatus();
+setInterval(loadStatus,30000);
+vSetState('idle');
+</script>
+</body>
+</html>
