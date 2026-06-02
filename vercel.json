@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/public/$1" }
+  ],
+  "env": {
+    "ANTHROPIC_API_KEY": "@anthropic_api_key",
+    "YOUR_NAME": "@your_name",
+    "YOUR_ROLE": "@your_role",
+    "MS_CLIENT_ID": "@ms_client_id",
+    "MS_CLIENT_SECRET": "@ms_client_secret",
+    "MS_TENANT_ID": "@ms_tenant_id",
+    "MS_USER_EMAIL": "@ms_user_email",
+    "FATHOM_API_KEY": "@fathom_api_key"
+  }
+}

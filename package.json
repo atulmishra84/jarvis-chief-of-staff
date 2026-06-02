@@ -1,0 +1,15 @@
+{
+  "name": "jarvis-chief-of-staff",
+  "version": "1.0.0",
+  "description": "JARVIS AI Chief of Staff — Vercel Edition",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.0"
+  }
+}
